@@ -19,8 +19,8 @@ resource "docker_container" "backend" {
   restart = "always"
 
   ports {
-    internal = var.backend_internal_port
-    external = var.backend_external_port
+    internal = 8080
+    external = var.backend_port
   }
 
   networks_advanced {
@@ -34,8 +34,8 @@ resource "docker_container" "frontend" {
   restart = "always"
 
   ports {
-    internal = var.frontend_internal_port
-    external = var.frontend_external_port
+    internal = 80
+    external = var.frontend_port
   }
 
   networks_advanced {

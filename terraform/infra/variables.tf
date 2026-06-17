@@ -4,15 +4,13 @@ variable "do_token" {
 }
 
 variable "region" {
-  default = "fra1"       # Frankfurt — Europe
+  default = "fra1"
 }
 
 variable "droplet_size" {
-  default = "s-1vcpu-1gb"   # Le moins cher
+  default = "s-1vcpu-1gb"
 }
 
 variable "ssh_key_name" {
   description = "Nom de la clé SSH dans DigitalOcean"
-  default     = "server-monitor-key"   #
-
 }

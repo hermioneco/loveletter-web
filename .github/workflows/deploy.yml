@@ -1,0 +1,115 @@
+name: CI/CD - Card Game Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  build:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Se connecter à Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build et push image Backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/card-game-backend:latest
+
+      - name: Build et push image Frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/card-game-frontend:latest
+
+  configure:
+    name: Configure Droplet avec Ansible
+    runs-on: ubuntu-latest
+    needs: build
+    continue-on-error: true
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Ansible
+        run: |
+          sudo apt update
+          sudo apt install ansible -y
+
+      - name: Configurer la clé SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/do_server_monitor
+          chmod 600 ~/.ssh/do_server_monitor
+
+      - name: Accepter la clé SSH du Droplet
+        run: |
+          ssh-keyscan -H ${{ secrets.DROPLET_IP }} >> ~/.ssh/known_hosts
+
+      - name: Générer l'inventory Ansible
+        run: |
+          echo "[servers]
+          droplet ansible_host=${{ secrets.DROPLET_IP }} ansible_user=root ansible_ssh_private_key_file=~/.ssh/do_server_monitor" > ansible/inventory.ini
+
+      - name: Lancer le playbook Ansible
+        run: |
+          ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
+
+  deploy:
+    name: Deploy avec Terraform
+    runs-on: ubuntu-latest
+    needs: configure
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Configurer la clé SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/do_server_monitor
+          chmod 600 ~/.ssh/do_server_monitor
+          ssh-keyscan -H ${{ secrets.DROPLET_IP }} >> ~/.ssh/known_hosts
+
+      - name: Nettoyer les conteneurs existants
+        run: |
+          ssh -i ~/.ssh/do_server_monitor \
+              -o StrictHostKeyChecking=no \
+              root@${{ secrets.DROPLET_IP }} \
+              "docker stop \$(docker ps -aq) 2>/dev/null || true && \
+               docker rm \$(docker ps -aq) 2>/dev/null || true && \
+               docker network prune -f 2>/dev/null || true"
+
+      - name: Copier les fichiers Terraform sur le Droplet
+        run: |
+          scp -i ~/.ssh/do_server_monitor \
+              -o StrictHostKeyChecking=no \
+              -r terraform/deploy \
+              root@${{ secrets.DROPLET_IP }}:/root/terraform-deploy
+
+      - name: Lancer Terraform sur le Droplet
+        run: |
+          ssh -i ~/.ssh/do_server_monitor \
+              -o StrictHostKeyChecking=no \
+              -o BatchMode=yes \
+              root@${{ secrets.DROPLET_IP }} \
+              "cd /root/terraform-deploy && \
+               terraform init && \
+               terraform apply -auto-approve \
+                 -var='droplet_ip=${{ secrets.DROPLET_IP }}' \
+                 -var='frontend_image_name=${{ secrets.DOCKERHUB_USERNAME }}/card-game-frontend:latest' \
+                 -var='backend_image_name=${{ secrets.DOCKERHUB_USERNAME }}/card-game-backend:latest'"
