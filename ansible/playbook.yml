@@ -1,10 +1,6 @@
 ---
 - name: Préparer l'environnement de déploiement
-<<<<<<< HEAD
-  hosts: server
-=======
-  hosts: local
->>>>>>> 3d3cc6d (initial commit)
+hosts: server
   become: yes                  # exécute en sudo
 
 
