@@ -4,27 +4,63 @@
   become: yes
 
   tasks:
-    - name: Installer Terraform via script
-      shell: |
-        apt-get update -y
-        apt-get install -y gnupg software-properties-common curl
-        curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --yes --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-        echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
-        apt-get update -y
-        apt-get install -y terraform
-      args:
-        executable: /bin/bash
 
-    - name: Vérifier Docker est disponible
+    - name: Mettre à jour les paquets
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Installer les dépendances système
+      apt:
+        name:
+          - curl
+          - ca-certificates
+          - gnupg
+          - software-properties-common
+          - lsb-release
+        state: present
+
+    - name: Vérifier que Docker est disponible
       command: docker --version
       register: docker_version
+      changed_when: false
 
-    - name: Vérifier Terraform est installé
-      command: terraform -v
-      register: terraform_version
+    - name: Installer Docker si absent
+      shell: |
+        curl -fsSL https://get.docker.com | sh
+      args:
+        executable: /bin/bash
+      when: docker_version.rc != 0
 
-    - name: Afficher les versions
+    - name: Démarrer et activer Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Autoriser root à utiliser Docker
+      user:
+        name: root
+        groups: docker
+        append: yes
+
+    - name: Vérifier que Docker fonctionne
+      command: docker info
+      register: docker_info
+      changed_when: false
+
+    - name: Puller l'image backend
+      community.docker.docker_image:
+        name: hahahahahahaha853/card-game-backend
+        tag: latest
+        source: pull
+
+    - name: Puller l'image frontend
+      community.docker.docker_image:
+        name: hahahahahahaha853/card-game-frontend
+        tag: latest
+        source: pull
+
+    - name: Afficher les infos Docker
       debug:
-        msg:
-          - "{{ docker_version.stdout }}"
-          - "{{ terraform_version.stdout }}"
+        msg: "{{ docker_info.stdout_lines[0] }}"

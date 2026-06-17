@@ -1,11 +1,9 @@
-output "frontend_url" {
-  value = "http://localhost:80"
-}
-
 output "backend_url" {
-  value = "http://droplet_ip:8080"
+  value       = "http://${var.droplet_ip}:${var.backend_external_port}"
+  description = "URL du backend"
 }
 
-output "network_id" {
-  value = docker_network.card_game_network.id
+output "frontend_url" {
+  value       = "http://${var.droplet_ip}:${var.frontend_external_port}"
+  description = "URL du frontend"
 }

@@ -4,7 +4,7 @@ import {
   RefreshCw, Trophy, Shield, Trash2, History, User, Info 
 } from 'lucide-react';
 
-const BASE_URL = 'http://localhost:8080/api/game';
+const BASE_URL = `${import.meta.env.VITE_API_URL}/api/game`
 
 // Card Database for Tooltips / Rules
 const CARDS_DB = [

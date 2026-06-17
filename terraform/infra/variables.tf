@@ -12,5 +12,7 @@ variable "droplet_size" {
 }
 
 variable "ssh_key_name" {
-  description = "server-monitor-key"
+  description = "Nom de la clé SSH dans DigitalOcean"
+  default     = "server-monitor-key"   #
+
 }
