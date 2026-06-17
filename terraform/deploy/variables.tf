@@ -5,12 +5,12 @@ variable "droplet_ip" {
 
 variable "frontend_image_name" {
   description = "Image Docker du frontend"
-  default     = "card-game-frontend:latest"
+  default     = "hahahahahahaha853/card-game-frontend:latest"
 }
 
 variable "backend_image_name" {
   description = "Image Docker du backend"
-  default     = "card-game-backend:latest"
+  default     = "hahahahahahaha853/card-game-backend:latest"
 }
 
 variable "frontend_port" {
@@ -23,4 +23,13 @@ variable "backend_port" {
 
 variable "network_name" {
   default = "card-game-network"
+}
+variable "docker_username" {
+  description = "Docker Hub username"
+  default     = "hahahahahahaha853"
+}
+
+variable "docker_password" {
+  description = "Docker Hub password ou access token"
+  sensitive   = true
 }

@@ -8,5 +8,11 @@ terraform {
 }
 
 provider "docker" {
-  host = "unix:///var/run/docker.sock"
+  host = "ssh://root@${var.droplet_ip}:22"
+
+  ssh_opts = [
+    "-i", "/.ssh/do_server_monitor",
+    "-o", "StrictHostKeyChecking=no",
+    "-o", "ConnectTimeout=30"
+  ]
 }
