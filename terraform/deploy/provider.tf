@@ -11,7 +11,7 @@ provider "docker" {
   host = "ssh://root@${var.droplet_ip}:22"
 
   ssh_opts = [
-    "-i", "~/.ssh/do_server_monitor",
+    "-i", "/.ssh/do_server_monitor",
     "-o", "StrictHostKeyChecking=no"
   ]
 }
