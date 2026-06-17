@@ -57,11 +57,13 @@ jobs:
             exit 1
           fi
           echo "La variable secrets.DROPLET_IP est configurée."
+          echo "IP dans les secrets GitHub (sans points) : $(echo "${{ secrets.DROPLET_IP }}" | tr '.' ' ')"
           if [ "${{ secrets.DROPLET_IP }}" = "64.225.110.58" ]; then
             echo "L'IP correspond bien à 64.225.110.58."
           else
-            echo "ATTENTION : L'IP configurée dans les secrets GitHub ne correspond pas à celle configurée localement (64.225.110.58) !"
-            echo "Veuillez vérifier vos secrets de dépôt GitHub (DROPLET_IP)."
+            echo "ERREUR : L'IP configurée dans les secrets GitHub ne correspond pas à celle configurée localement (64.225.110.58) !"
+            echo "Veuillez mettre à jour votre secret DROPLET_IP sur GitHub."
+            exit 1
           fi
 
       - name: Installer Ansible
