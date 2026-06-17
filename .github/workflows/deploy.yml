@@ -3,13 +3,10 @@ name: CI/CD - Card Game Deployment
 on:
   push:
     branches:
-      - main        # se déclenche à chaque push sur main
+      - main
 
 jobs:
 
-  # ─────────────────────────────────────────
-  # JOB 1 — BUILD & PUSH les images Docker
-  # ─────────────────────────────────────────
   build:
     name: Build & Push Docker Images
     runs-on: ubuntu-latest
@@ -38,33 +35,14 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/card-game-frontend:latest
 
-  # ─────────────────────────────────────────
-  # JOB 2 — CONFIGURE avec Ansible
-  # ─────────────────────────────────────────
   configure:
     name: Configure Droplet avec Ansible
     runs-on: ubuntu-latest
-    needs: build        # attend que le build soit terminé
+    needs: build
 
     steps:
       - name: Récupérer le code
-        uses: actions/checkout@v3
-
-      - name: Vérifier la configuration de l'IP du Droplet
-        run: |
-          if [ -z "${{ secrets.DROPLET_IP }}" ]; then
-            echo "ERREUR : La variable secrets.DROPLET_IP est vide !"
-            exit 1
-          fi
-          echo "La variable secrets.DROPLET_IP est configurée."
-          echo "IP dans les secrets GitHub (sans points) : $(echo "${{ secrets.DROPLET_IP }}" | tr '.' ' ')"
-          if [ "${{ secrets.DROPLET_IP }}" = "64.225.110.58" ]; then
-            echo "L'IP correspond bien à 64.225.110.58."
-          else
-            echo "ERREUR : L'IP configurée dans les secrets GitHub ne correspond pas à celle configurée localement (64.225.110.58) !"
-            echo "Veuillez mettre à jour votre secret DROPLET_IP sur GitHub."
-            exit 1
-          fi
+        uses: actions/checkout@v4
 
       - name: Installer Ansible
         run: |
@@ -76,6 +54,9 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/do_server_monitor
           chmod 600 ~/.ssh/do_server_monitor
+
+      - name: Accepter la clé SSH du Droplet
+        run: |
           ssh-keyscan -H ${{ secrets.DROPLET_IP }} >> ~/.ssh/known_hosts
 
       - name: Générer l'inventory Ansible
@@ -84,14 +65,9 @@ jobs:
           droplet ansible_host=${{ secrets.DROPLET_IP }} ansible_user=root ansible_ssh_private_key_file=~/.ssh/do_server_monitor" > ansible/inventory.ini
 
       - name: Lancer le playbook Ansible
-        env:
-          ANSIBLE_CONFIG: ansible/ansible.cfg
         run: |
           ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
 
-  # ─────────────────────────────────────────
-  # JOB 3 — DEPLOY avec Terraform
-  # ─────────────────────────────────────────
   deploy:
     name: Deploy avec Terraform
     runs-on: ubuntu-latest
@@ -110,24 +86,20 @@ jobs:
 
       - name: Copier les fichiers Terraform sur le Droplet
         run: |
-          ssh -i ~/.ssh/do_server_monitor \
-              -o StrictHostKeyChecking=no \
-              root@${{ secrets.DROPLET_IP }} \
-              "mkdir -p /root/terraform-deploy"
           scp -i ~/.ssh/do_server_monitor \
               -o StrictHostKeyChecking=no \
-              terraform/deploy/*.tf \
-              root@${{ secrets.DROPLET_IP }}:/root/terraform-deploy/
+              -r terraform/deploy \
+              root@${{ secrets.DROPLET_IP }}:/root/terraform-deploy
 
       - name: Lancer Terraform sur le Droplet
         run: |
-            ssh -i ~/.ssh/do_server_monitor \
-                -o StrictHostKeyChecking=no \
-                -o BatchMode=yes \
-                root@${{ secrets.DROPLET_IP }} \
-                "cd /root/terraform-deploy && \
-                 terraform init && \
-                 terraform apply -auto-approve \
-                   -var='droplet_ip=${{ secrets.DROPLET_IP }}' \
-                   -var='frontend_image_name=${{ secrets.DOCKERHUB_USERNAME }}/card-game-frontend:latest' \
-                   -var='backend_image_name=${{ secrets.DOCKERHUB_USERNAME }}/card-game-backend:latest'"
+          ssh -i ~/.ssh/do_server_monitor \
+              -o StrictHostKeyChecking=no \
+              -o BatchMode=yes \
+              root@${{ secrets.DROPLET_IP }} \
+              "cd /root/terraform-deploy && \
+               terraform init && \
+               terraform apply -auto-approve \
+                 -var='droplet_ip=${{ secrets.DROPLET_IP }}' \
+                 -var='frontend_image_name=${{ secrets.DOCKERHUB_USERNAME }}/card-game-frontend:latest' \
+                 -var='backend_image_name=${{ secrets.DOCKERHUB_USERNAME }}/card-game-backend:latest'"
