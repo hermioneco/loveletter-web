@@ -107,7 +107,7 @@ jobs:
 
       - name: Lancer Terraform sur le Droplet
         run: |
-          ssh -i ~/.ssh/do_server_monitor \
+          ssh -i /.ssh/do_server_monitor \
               -o StrictHostKeyChecking=no \
               -o BatchMode=yes \
               root@${{ secrets.DROPLET_IP }} \
