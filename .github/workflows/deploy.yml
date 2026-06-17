@@ -91,14 +91,19 @@ jobs:
 
       - name: Copier les fichiers Terraform sur le Droplet
         run: |
-          scp -i ~/.ssh/do_server_monitor -r terraform/deploy \
-            root@${{ secrets.DROPLET_IP }}:/root/terraform-deploy
+          scp -i ~/.ssh/do_server_monitor \
+              -o StrictHostKeyChecking=no \
+              -r terraform/deploy \
+              root@${{ secrets.DROPLET_IP }}:/root/terraform-deploy
 
       - name: Lancer Terraform sur le Droplet
         run: |
-          ssh -i ~/.ssh/do_server_monitor root@${{ secrets.DROPLET_IP }} << 'EOF'
-            cd /root/terraform-deploy
-            terraform init
-            terraform apply -auto-approve \
-              -var="frontend_image_name=${{ secrets.DOCKERHUB_USERNAME }}/card-game-frontend:latest" \
-              -var="backend_image_name=${{ secrets.DOCKERHUB_USERNAME }}/card-game-backend:latest"
+          ssh -i ~/.ssh/do_server_monitor \
+              -o StrictHostKeyChecking=no \
+              -o BatchMode=yes \
+              root@${{ secrets.DROPLET_IP }} \
+              "cd /root/terraform-deploy && \
+               terraform init && \
+               terraform apply -auto-approve \
+                 -var='frontend_image_name=${{ secrets.DOCKERHUB_USERNAME }}/card-game-frontend:latest' \
+                 -var='backend_image_name=${{ secrets.DOCKERHUB_USERNAME }}/card-game-backend:latest'"
