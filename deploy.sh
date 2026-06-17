@@ -3,7 +3,7 @@ set -e
 
 KEY_PATH="$HOME/.ssh/do_server_monitor"
 INFRA_DIR="terraform/infra"
-DOCKER_DIR="terraform/docker"
+DOCKER_DIR="terraform/deploy"
 ANSIBLE_DIR="ansible"
 
 echo "══════════════════════════════════════"
@@ -42,7 +42,8 @@ echo "════════════════════════�
 echo " 3. Injection de l'IP dans Ansible"
 echo "══════════════════════════════════════"
 cd ../../$ANSIBLE_DIR
-sed -i "s/DROPLET_IP_PLACEHOLDER/$DROPLET_IP/" inventory.ini
+echo "[servers]
+droplet ansible_host=$DROPLET_IP ansible_user=root ansible_ssh_private_key_file=$KEY_PATH" > inventory.ini
 echo "✅ inventory.ini mis à jour : $DROPLET_IP"
 
 echo ""

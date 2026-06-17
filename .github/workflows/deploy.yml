@@ -63,9 +63,12 @@ jobs:
       - name: Générer l'inventory Ansible
         run: |
           echo "[servers]
-          droplet ansible_host=${{ secrets.DROPLET_IP }} ansible_user=root ansible_ssh_private_key_file=~/.ssh/do_server_monitor" > ansible/inventory.ini
+          droplet ansible_host=${{ secrets.DROPLET_IP }} ansible_user=root ansible_ssh_private_key_file=/home/runner/.ssh/do_server_monitor" > ansible/inventory.ini
 
       - name: Lancer le playbook Ansible
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: 'False'
+          ANSIBLE_CONFIG: ansible/ansible.cfg
         run: |
           ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
 
@@ -96,9 +99,10 @@ jobs:
 
       - name: Copier les fichiers Terraform sur le Droplet
         run: |
+          ssh -i ~/.ssh/do_server_monitor -o StrictHostKeyChecking=no root@${{ secrets.DROPLET_IP }} "mkdir -p /root/terraform-deploy"
           scp -i ~/.ssh/do_server_monitor \
               -o StrictHostKeyChecking=no \
-              -r terraform/deploy \
+              -r terraform/deploy/. \
               root@${{ secrets.DROPLET_IP }}:/root/terraform-deploy
 
       - name: Lancer Terraform sur le Droplet
