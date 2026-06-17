@@ -90,6 +90,14 @@ jobs:
               -o StrictHostKeyChecking=no \
               -r terraform/deploy \
               root@${{ secrets.DROPLET_IP }}:/root/terraform-deploy
+      - name: Nettoyer les conteneurs existants
+        run: |
+          ssh -i ~/.ssh/do_server_monitor \
+             -o StrictHostKeyChecking=no \
+             root@${{ secrets.DROPLET_IP }} \
+             "docker stop \$(docker ps -aq) 2>/dev/null || true && \
+              docker rm \$(docker ps -aq) 2>/dev/null || true && \
+              docker network prune -f 2>/dev/null || true"
 
       - name: Lancer Terraform sur le Droplet
         run: |
