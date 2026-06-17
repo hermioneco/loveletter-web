@@ -50,6 +50,20 @@ jobs:
       - name: Récupérer le code
         uses: actions/checkout@v3
 
+      - name: Vérifier la configuration de l'IP du Droplet
+        run: |
+          if [ -z "${{ secrets.DROPLET_IP }}" ]; then
+            echo "ERREUR : La variable secrets.DROPLET_IP est vide !"
+            exit 1
+          fi
+          echo "La variable secrets.DROPLET_IP est configurée."
+          if [ "${{ secrets.DROPLET_IP }}" = "64.225.110.58" ]; then
+            echo "L'IP correspond bien à 64.225.110.58."
+          else
+            echo "ATTENTION : L'IP configurée dans les secrets GitHub ne correspond pas à celle configurée localement (64.225.110.58) !"
+            echo "Veuillez vérifier vos secrets de dépôt GitHub (DROPLET_IP)."
+          fi
+
       - name: Installer Ansible
         run: |
           sudo apt update
