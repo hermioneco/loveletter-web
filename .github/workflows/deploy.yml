@@ -1,0 +1,109 @@
+name: CI/CD - Card Game Deployment
+
+on:
+  push:
+    branches:
+      - main        # se déclenche à chaque push sur main
+
+jobs:
+
+  # ─────────────────────────────────────────
+  # JOB 1 — BUILD & PUSH les images Docker
+  # ─────────────────────────────────────────
+  build:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v3
+
+      - name: Se connecter à Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build et push image Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/card-game-backend:latest
+
+      - name: Build et push image Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/card-game-frontend:latest
+
+  # ─────────────────────────────────────────
+  # JOB 2 — CONFIGURE avec Ansible
+  # ─────────────────────────────────────────
+  configure:
+    name: Configure Droplet avec Ansible
+    runs-on: ubuntu-latest
+    needs: build        # attend que le build soit terminé
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v3
+
+      - name: Installer Ansible
+        run: |
+          sudo apt update
+          sudo apt install ansible -y
+
+      - name: Configurer la clé SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/do_server_monitor
+          chmod 600 ~/.ssh/do_server_monitor
+
+      - name: Générer l'inventory Ansible
+        run: |
+          echo "[servers]
+          droplet ansible_host=${{ secrets.DROPLET_IP }} ansible_user=root ansible_ssh_private_key_file=~/.ssh/do_server_monitor" > ansible/inventory.ini
+
+      - name: Lancer le playbook Ansible
+        run: |
+          ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
+
+  # ─────────────────────────────────────────
+  # JOB 3 — DEPLOY avec Terraform
+  # ─────────────────────────────────────────
+  deploy:
+    name: Deploy avec Terraform
+    runs-on: ubuntu-latest
+    needs: configure    # attend qu'Ansible ait fini
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v3
+
+      - name: Installer Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configurer la clé SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/do_server_monitor
+          chmod 600 ~/.ssh/do_server_monitor
+          ssh-keyscan -H ${{ secrets.DROPLET_IP }} >> ~/.ssh/known_hosts
+
+      - name: Terraform Init
+        working-directory: terraform/deploy
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: terraform/deploy
+        run: terraform plan
+        env:
+          TF_VAR_droplet_ip: ${{ secrets.DROPLET_IP }}
+
+      - name: Terraform Apply
+        working-directory: terraform/deploy
+        run: terraform apply -auto-approve
+        env:
+          TF_VAR_droplet_ip: ${{ secrets.DROPLET_IP }}

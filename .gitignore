@@ -1,0 +1,41 @@
+<<<<<<< HEAD
+## Secrets Terraform
+ #terraform.tfvars
+ 
+ #
+ ## Dossiers générés par Terraform
+ **/.terraform/
+ **/.terraform.lock.hcl
+ *.tfstate
+ *.tfstate.backup
+ #
+ ## Variables d'environnement
+ .env
+ .env.* Terraform
+.terraform/
+
+*.tfstate.*
+terraform.tfvars
+
+# Maven
+target/
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+node_modules/
+=======
+node_modules/
+target/
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+>>>>>>> 3d3cc6d (initial commit)

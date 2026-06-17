@@ -1,0 +1,13 @@
+# Commun
+.env
+.git
+.gitignore
+
+# Frontend
+frontend/node_modules
+frontend/.next
+
+# Backend
+backend/target
+backend/.gradle
+backend/.mvn

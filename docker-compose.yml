@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: card-game-backend
+    ports:
+      - "8080:8080"
+    networks:
+      - card-game-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: card-game-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - card-game-network
+
+networks:
+  card-game-network:
+    driver: bridge
