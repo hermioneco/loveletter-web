@@ -19,7 +19,7 @@ resource "docker_container" "backend" {
   restart = "always"
   ports {
     internal = 8080
-    external = 8081
+    external = 81
   }
   networks_advanced {
     name = docker_network.card_game_network.name
@@ -34,7 +34,7 @@ resource "docker_container" "frontend" {
 
   ports {
     internal = 80
-    external = var.frontend_port
+    external = 8081
   }
   networks_advanced {
     name = docker_network.card_game_network.name
