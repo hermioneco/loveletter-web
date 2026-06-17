@@ -1,6 +1,6 @@
 ---
 - name: Préparer l'environnement de déploiement
-hosts: server
+hosts: servers
   become: yes                  # exécute en sudo
 
 
