@@ -98,12 +98,13 @@ jobs:
 
       - name: Lancer Terraform sur le Droplet
         run: |
-          ssh -i ~/.ssh/do_server_monitor \
-              -o StrictHostKeyChecking=no \
-              -o BatchMode=yes \
-              root@${{ secrets.DROPLET_IP }} \
-              "cd /root/terraform-deploy && \
-               terraform init && \
-               terraform apply -auto-approve \
-                 -var='frontend_image_name=${{ secrets.DOCKERHUB_USERNAME }}/card-game-frontend:latest' \
-                 -var='backend_image_name=${{ secrets.DOCKERHUB_USERNAME }}/card-game-backend:latest'"
+            ssh -i ~/.ssh/do_server_monitor \
+                -o StrictHostKeyChecking=no \
+                -o BatchMode=yes \
+                root@${{ secrets.DROPLET_IP }} \
+                "cd /root/terraform-deploy && \
+                 terraform init && \
+                 terraform apply -auto-approve \
+                   -var='droplet_ip=${{ secrets.DROPLET_IP }}' \
+                   -var='frontend_image_name=${{ secrets.DOCKERHUB_USERNAME }}/card-game-frontend:latest' \
+                   -var='backend_image_name=${{ secrets.DOCKERHUB_USERNAME }}/card-game-backend:latest'"

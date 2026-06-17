@@ -16,6 +16,7 @@ variable "network_name" {
 }
 variable "droplet_ip" {
   description = "IP publique du Droplet"
+  default = ""
 
 }
 
